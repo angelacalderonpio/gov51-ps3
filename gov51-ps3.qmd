@@ -3,10 +3,83 @@ title: "gov51-ps3"
 author: "Angela Calderon Pio"
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+<https://github.com/angelacalderonpio/gov51-ps3.git>
 
 ```{r}
-1 + 1
+
+#1.1
+
+library(tidyverse)
+library(glmnet)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+
+compas <- read.csv("data/raw/compas_clean.csv")
+
+dim(compas)
+
+
 ```
+
+# 1.2 
+
+There are 7,214 observations and 17 variables are in dataset. The unit of observation is an individual person (in this case, a person/defendant in the COMPAS dataset).
+
+# 1.3
+
+```{r}
+
+mean(compas$recidivism, na.rm = TRUE)
+
+```
+
+a\) The overall recidivism rate in the data is 0.451.
+
+b\) This outcome is binary, which matters for interpretation because a linear model assumes a continuous outcome. Consequently, predicted values can be less than 0 or greater than 1 which are not meaningful probabilities.
+
+# 1.4
+
+```{r}
+
+means <- sapply(compas, function(x) mean(as.numeric(x), na.rm = TRUE))
+sds <- sapply(compas, function(x) sd(as.numeric(x), na.rm = TRUE))
+
+summary_table <- data.frame(
+  variable = names(compas),
+  mean = means,
+  sd = sds
+)
+
+summary_table
+
+```
+
+The variables age and priors_count have the most variation at standard deviations of 11.90 and 4.883, respectively. The variables with the least variation are native_american and asian with standard deviations of 0.050 and 0.066, respectively.
+
+# 1.5
+
+```{r}
+
+compas |>
+  mutate(priors_cat = case_when(
+    priors_count == 0 ~ "0",
+    priors_count %in% 1:2 ~ "1-2",
+     priors_count %in% 3:5 ~ "3-5",
+     priors_count %in% 6:10 ~ "6-10",
+     priors_count >= 11 ~ "11+"
+  ),
+  priors_cat = factor(priors_cat, levels = c("0", "1-2", "3-5", "6-10", "11+"))) |>
+  group_by(priors_cat) |>
+  summarize( rate = mean(recidivism, na.rm = TRUE)) |>
+  ggplot(aes(x = priors_cat, y = rate)) +
+  geom_col(color = "black", fill = "pink") +
+  labs(
+    x = "Number of Prior Offenses",
+    y = "Recidivism Rate"
+  )
+
+
+```
+
+The pattern shows that as the number of prior offenses increases, the recidivism rate also increases, suggesting a positive relationship between these two variables.
