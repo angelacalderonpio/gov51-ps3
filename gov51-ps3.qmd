@@ -1,6 +1,7 @@
 ---
 title: "gov51-ps3"
 author: "Angela Calderon Pio"
+format: pdf
 ---
 
 <https://github.com/angelacalderonpio/gov51-ps3.git>
@@ -14,6 +15,7 @@ library(glmnet)
 library(knitr)
 library(ggplot2)
 library(dplyr)
+library(tinytex)
 
 compas <- read.csv("data/raw/compas_clean.csv")
 
@@ -34,7 +36,7 @@ mean(compas$recidivism, na.rm = TRUE)
 
 ```
 
-a\) The overall recidivism rate in the data is 0.451.
+a\) The overall recidivism rate in the data is 0.4506515.
 
 b\) This outcome is binary, which matters for interpretation because a linear model assumes a continuous outcome. Consequently, predicted values can be less than 0 or greater than 1 which are not meaningful probabilities.
 
@@ -55,7 +57,7 @@ summary_table
 
 ```
 
-The variables age and priors_count have the most variation at standard deviations of 11.90 and 4.883, respectively. The variables with the least variation are native_american and asian with standard deviations of 0.050 and 0.066, respectively.
+The variables age and priors_count have the most variation at standard deviations of 11.88892178 and 4.88253835, respectively. The variables with the least variation are native_american and asian with standard deviations of 0.04989256 and 0.06645867, respectively.
 
 # 1.5
 
@@ -83,3 +85,80 @@ compas |>
 ```
 
 The pattern shows that as the number of prior offenses increases, the recidivism rate also increases, suggesting a positive relationship between these two variables.
+
+\newpage
+
+# 2.1
+
+```{r}
+
+set.seed(51)
+n <- nrow(compas)
+train_idx <- sample(1:n, size = floor (0.8 * n))
+train <- compas[train_idx, ]
+test <- compas[-train_idx, ]
+nrow(train)
+nrow(test)
+
+```
+
+In the train set, there are 5,771 observations. In the test set, there are 1,443 observations.
+
+# 2.2
+
+```{r}
+
+model <- lm(recidivism ~ ., data = train)
+summary(model)
+
+
+```
+
+The predictors that are statistically significant at the 5% level include age, female, priors_counts, felony, has_juv_misd, and age_25_45, as their p-values are below 0.05.
+
+Each additional prior offense is associated with about a 0.03 increase in the predicted probability of recidivism, holding all other variables constant.
+
+# 2.3
+
+```{r}
+
+
+sqrt(1/nrow(train) * sum((predict(model, newdata = train) - train$recidivism)^2))
+
+sqrt(1/nrow(test) * sum((predict(model, newdata = test) - test$recidivism)^2))
+
+0.4605811 - 0.462227
+
+```
+
+The gap between the in-sample and the out-of-sample RMSE is -0.0016459. This is very small, suggesting that the model performs similarly on both the training and test data, so OLS with 16 predictors does not appear to be overfitting.
+
+# 2.4
+
+```{r}
+
+set.seed(51)
+
+folds <- sample(rep(1:5, length.out = nrow(train)))
+
+rmse_cv <- numeric(5)
+for (k in 1:5) {
+  train_k <- train[folds != k, ]
+  test_k <- train[folds == k, ]
+  model_k <- lm(recidivism ~ ., data = train_k)
+  pred_k <- predict(model_k, newdata = test_k)
+  rmse_cv[k] <- sqrt(mean((test_k$recidivism - pred_k)^2))
+}
+
+mean(rmse_cv)
+
+0.4620144- 0.462227
+```
+
+a\) The 5-fold cross-validation RMSE is 0.4620144. This is quite similar to the single-split out-of-sample RMSE (0.462227), indicating that the model's performance is stable across different samples. (There is a 0.0002126 difference).
+
+b\) Cross-validation is more reliable as it utilizes the mean across multiple splits rather than relying on one random split.
+
+c\) Cross-validation is useful for choosing $\lamba$ because it tests different values on new data and picks the one with the lowest prediction error.
+
+\newpage
