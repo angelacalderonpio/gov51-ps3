@@ -161,7 +161,7 @@ a\) The 5-fold cross-validation RMSE is 0.4620144. This is quite similar to the 
 
 b\) Cross-validation is more reliable as it utilizes the mean across multiple splits rather than relying on one random split.
 
-c\) Cross-validation is useful for choosing $\lamba$ because it tests different values on new data and picks the one with the lowest prediction error.
+c\) Cross-validation is useful for choosing $\lambda$ because it tests different values on new data and picks the one with the lowest prediction error.
 
 \newpage
 
@@ -214,5 +214,106 @@ c\) The gap between in-sample and out-of-sample RMSE is larger than in the simpl
 # 3.3
 
 This phenomenon is called overfitting. Adding many interaction terms makes the model itself more flexible, so it can fit the training data more closely and reduce in-sample error, But, it begins to capture random noise rather than actual patterns, leading to worse performance on new data (or out-of sample).
+
+\newpage
+
+# 4.1
+
+```{r}
+
+set.seed(51) # for reproducible CV folds
+cv_ridge <- cv.glmnet(X_train, y_train, alpha = 0, nfolds = 10)
+cv_ridge
+
+plot(cv_ridge)
+
+
+```
+
+a\) The optimal $\lambda$ selected by cross-validation is 0.0138
+
+b\) The plot shows how prediction error changes with $\lambda$. Error decreases at first and then flattens, and the optimal $\lambda$ is the one that gives the lowest error.
+
+# 4.2
+
+```{r}
+
+pred_ridge <- predict(cv_ridge, s = "lambda.min", newx = X_test)
+
+sqrt(mean((y_test - pred_ridge)^2))
+
+
+```
+
+The out-of-sample RMSE for Ridge is 0.4700385. This is lower than the kitchen-sink OLS (which was 0.4890411) but slightly higher than the simple OLS (around 0.4620144). This suggests that Ridge reduces overfitting compared to the expanded model through shrinking coefficients, but does not outperform the simpler model here.
+
+# 4.3
+
+```{r}
+
+coef(cv_ridge, s = "lambda.min")
+
+```
+
+No, Ridge did not eliminate any variables. While some coefs are very small, none are exactly zero. Conceptually this is sound as Ridge shrinks coefficients toward zero, but doesn't make them equal zero.
+
+\newpage
+
+# 5.1
+
+```{r}
+
+set.seed(51)
+cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1, nfolds = 10)
+
+cv_lasso
+
+plot(cv_lasso)
+
+```
+
+a\) The optimal $\lambda$ is 0.007694.
+
+b\) The plot shows that the error initially falls, then reaches its minimum around $\lambda$ = 0.007694, then begins to rise again.
+
+# 5.2
+
+```{r}
+
+coef_lasso <- coef(cv_lasso, s = "lambda.min")
+coef_lasso
+
+sum(coef_lasso != 0)
+sum(coef_lasso == 0)
+
+```
+
+a\) Out of the 141 variables, 28 survived: thus, 114 were eliminated.
+
+b\) A few of the surviving interaction terms include:
+
+-   female:black
+
+-   black:juv_other_count
+
+-   priors_count:age_under_25
+
+-   other_race:has_juv_felony
+
+These make substantive sense because they capture the effect of how criminal history or demographics could potentially vary across different groups.
+
+c\) This illustrates Baker's argument because LASSO automatically selects which variables to keep based on predictive performance, rather than relying on a person to choose them manually (which might yield a degree of subjectivity). By shrinking coefficients to zero, it reduces subjective decisions about which interactions matter.
+
+# 5.3
+
+```{r}
+
+pred_lasso <- predict(cv_lasso, s = "lambda.min", newx = X_test)
+
+sqrt(mean((y_test - pred_lasso)^2))
+
+```
+
+The LASSO out-of-sample RMSE is 0.4592597. This is lower than both Ridge (0.4700385) and the kitchen-sink OLS (0.4890411), and slightly better than the simple OLS (0.4620144). This indicates that LASSO reduces overfitting and improves prediction.
 
 \newpage
