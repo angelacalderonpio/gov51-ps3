@@ -6,6 +6,8 @@ format: pdf
 
 <https://github.com/angelacalderonpio/gov51-ps3.git>
 
+# 1.1
+
 ```{r}
 
 #1.1
@@ -160,5 +162,57 @@ a\) The 5-fold cross-validation RMSE is 0.4620144. This is quite similar to the 
 b\) Cross-validation is more reliable as it utilizes the mean across multiple splits rather than relying on one random split.
 
 c\) Cross-validation is useful for choosing $\lamba$ because it tests different values on new data and picks the one with the lowest prediction error.
+
+\newpage
+
+# 3.1
+
+```{r}
+
+# Full interaction formula
+f_full <- recidivism ~ (.)^2 +
+I(age^2) + I(priors_count^2) +
+I(juv_fel_count^2) + I(juv_misd_count^2) +
+I(juv_other_count^2)
+# Create design matrices for glmnet (we'll need these later)
+X_train <- model.matrix(f_full, data = train)[, -1]
+X_test <- model.matrix(f_full, data = test)[, -1]
+y_train <- train$recidivism
+y_test <- test$recidivism
+# How many features now?
+ncol(X_train)
+
+5771/141
+5771/16
+
+```
+
+a\) The expanded model has 141 variables.
+
+b\) The ratio of training observations to predictors is about 40.92908:1 In the simple model, the ratio was higher at 360.6875:1. Thus, the expanded model uses more predictors relative to the sample size.
+
+# 3.2
+
+```{r}
+
+ols_full <- lm(f_full, data = train)
+
+sqrt(1/5771 * sum((predict(ols_full, newdata = train) - train$recidivism)^2))
+
+sqrt(1/1443 * sum((predict(ols_full, newdata = test) - test$recidivism)^2))
+
+0.4485474-0.4890411
+
+```
+
+a\) In sample RMSE: 0.4485474
+
+b\) Out-of-sample RMSE: 0.4890411
+
+c\) The gap between in-sample and out-of-sample RMSE is larger than in the simple model (here, 0.0404937. The in-sample RMSE is lower (0.44854740, but the out-of-sample RMSE is higher (0.4890411), indicating worse performance on new data. This suggests overfitting, as the expanded model is too complex and fits noise in the training data as opposed to general patterns.
+
+# 3.3
+
+This phenomenon is called overfitting. Adding many interaction terms makes the model itself more flexible, so it can fit the training data more closely and reduce in-sample error, But, it begins to capture random noise rather than actual patterns, leading to worse performance on new data (or out-of sample).
 
 \newpage
