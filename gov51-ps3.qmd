@@ -73,7 +73,8 @@ compas |>
      priors_count %in% 6:10 ~ "6-10",
      priors_count >= 11 ~ "11+"
   ),
-  priors_cat = factor(priors_cat, levels = c("0", "1-2", "3-5", "6-10", "11+"))) |>
+  priors_cat = factor(priors_cat, levels = c("0", 
+                                             "1-2", "3-5", "6-10", "11+"))) |>
   group_by(priors_cat) |>
   summarize( rate = mean(recidivism, na.rm = TRUE)) |>
   ggplot(aes(x = priors_cat, y = rate)) +
@@ -82,6 +83,8 @@ compas |>
     x = "Number of Prior Offenses",
     y = "Recidivism Rate"
   )
+
+ggsave("output/q1.5_plot.png", width = 6, height = 4)
 
 
 ```
@@ -227,6 +230,8 @@ cv_ridge
 
 plot(cv_ridge)
 
+ggsave("output/q4.1_plot.png", width = 6, height = 4)
+
 
 ```
 
@@ -269,6 +274,8 @@ cv_lasso <- cv.glmnet(X_train, y_train, alpha = 1, nfolds = 10)
 cv_lasso
 
 plot(cv_lasso)
+
+ggsave("output/q5.1_plot.png", width = 6, height = 4)
 
 ```
 
@@ -343,7 +350,8 @@ The out of sample RMSE for the Elastic Net is 0.45383446, which is slightly lowe
 ```{r}
 
 results <- data.frame(
-  Model = c("OLS (main effects, 16 vars)", "OLS (kitchen sink , ~ 141 vars)", "Ridge", "LASSO", "Elastic Net"),
+  Model = c("OLS (main effects, 16 vars)",
+            "OLS (kitchen sink , ~ 141 vars)", "Ridge", "LASSO", "Elastic Net"),
   Predictors = c(16, 141, 141, 28, 43),
   RMSE = c(0.462, 0.489, 0.470, 0.459, 0.458)
 )
