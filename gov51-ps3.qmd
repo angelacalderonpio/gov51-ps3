@@ -396,6 +396,14 @@ mean(test$pred[
 
 0.511985 - 0.3789606
 
+sum(test$black == 1)
+sum(
+  test$black == 0 &
+  test$hispanic == 0 &
+  test$asian == 0 &
+  test$other_race == 0 &
+  test$native_american == 0
+)
 
 ```
 
