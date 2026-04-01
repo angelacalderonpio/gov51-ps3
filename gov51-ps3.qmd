@@ -317,3 +317,98 @@ sqrt(mean((y_test - pred_lasso)^2))
 The LASSO out-of-sample RMSE is 0.4592597. This is lower than both Ridge (0.4700385) and the kitchen-sink OLS (0.4890411), and slightly better than the simple OLS (0.4620144). This indicates that LASSO reduces overfitting and improves prediction.
 
 \newpage
+
+# 6.1
+
+```{r}
+
+set.seed(51)
+
+cv_enet <- cv.glmnet(X_train, y_train, alpha = 0.5, nfolds = 10)
+
+cv_enet
+
+pred_enet <- predict(cv_enet, s = "lambda.min", newx = X_test)
+sqrt(mean((y_test - pred_enet)^2))
+
+coef_enet <- coef(cv_enet, s = "lambda.min")
+sum(coef_enet != 0)
+
+```
+
+The out of sample RMSE for the Elastic Net is 0.45383446, which is slightly lower than LASSO, Ridge, and both OLS models. It keeps more variables than LASSO but far fewer than Ridge, balancing variable selection and shrinkage. It retains 43 variables.
+
+# 6.2
+
+```{r}
+
+results <- data.frame(
+  Model = c("OLS (main effects, 16 vars)", "OLS (kitchen sink , ~ 141 vars)", "Ridge", "LASSO", "Elastic Net"),
+  Predictors = c(16, 141, 141, 28, 43),
+  RMSE = c(0.462, 0.489, 0.470, 0.459, 0.458)
+)
+
+kable(results)
+
+```
+
+a\) The model with the lowest out-of-sample RMSE is the Elastic Net model, with a value of 0.458. This indicates the best predictive performance.
+
+b\) The kitchen-sink OLS model has the best in-sample fit because it uses the most variables so it can match the training data very closely (and unlike Ridge, it doesn't shrink coefficients toward zero). However, it is not the sample model with the best out-of-sample performance as it fits to the noise in the data.
+
+c\) This table demonstrates bias-variance tradeoff: the kitchen-sink OLS model has low bias but high variance, leading to overfitting and sub-ideal out-of-sample performance. The other models like Ridge, LASSO, and Elastic Net reduce variance by shrinking or choosing coefficients, but increases bias. Elastic Net seems to be the best model here as it balances both bias and variance.
+
+# 6.3
+
+a\) Lasso helped narrow the disagreement by removing the need for experts to subjectively choose peer firms. That is, instead of manually picking comparison companies, LASSO uses data to select which firms actually improve predictive accuracy. Because it makes the process more objective, experts are more likely to wind up with similar models and conclusions.
+
+b\) Based on this problem set, the biggest source of manipulation in traditional OLS is the choice of which variables to include in the model. In this approach, you can include many predictors even if they are weak or irrelevant, which can make the model fit the training data superbly, but hurt out-of-sample performance. Because OLS doesn't restrict these choices, analysts can impact results through this.
+
+# 6.4
+
+a\) No, the LASSO coefficients on priors_count would not answer the causal question. It is designed to improve prediction, not identify causal effects, and it might shrink/removal variables based on predictive usefulness rather than causal importance. The estimate could further be biased by omitted variables, so it can't tell us whether priors_count itself causes higher recidivism.
+
+b\) The difference between using regression for prediction versus causal inference is that prediction focuses accuracy whereas causal inference focuses on identifying actual cause and effect relationships. More specifically, the former seeks to forecast outcomes, even if coefs are biased. But in the latter, research design is important so that we can actually interpret the coefs as causal effects.
+
+# 6.5
+
+```{r}
+
+test$pred <- predict(model, newdata = test)
+
+mean(test$pred[test$black ==1])
+
+mean(test$pred[
+  test$black == 0 &
+    test$hispanic == 0 &
+    test$asian == 0 &
+    test$other_race == 0 &
+    test$native_american == 0
+])
+
+0.511985 - 0.3789606
+
+
+```
+
+a\) Yes, there is a difference. For Black defendants, the mean predicted recidivism probability is 0.511985, whereas for white defendants, it is 0.3789606 (the difference being 0.1330244).
+
+```{r}
+
+mean(test$recidivism[test$black ==1])
+
+mean(test$recidivism[
+  test$black == 0 &
+    test$hispanic == 0 &
+    test$asian == 0 &
+    test$other_race == 0 &
+    test$native_american == 0
+])
+
+0.521262 - 0.4020202
+
+```
+
+The actual recidivism rates for Black and white defendants are 0.521262 and 0.4020202, respectively. Compared to the predicted rates, the model assigns a higher predicted probability to Black defendants than to white defendants, so the predictions reflect a similar pattern to the actual data.
+
+c\) There are pros and cons to using predictive algorithms in criminal justice. One on hand, they can improve consistency and help identify individuals at higher risk of recidivism. On the other hand, as seen in this question, both the predicted and actual recidivism rates were higher for Black defendants, which raises concerns that these models may reflect or reinforce existing disparities in data. And I think generally, it is important to recognize that these are imperfect predictive models. The goal is to ensure fairness and improve predictive accuracy.
